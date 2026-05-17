@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # СЕКРЕТНЫЙ ХАК: импортируем само приложение как объект прямо здесь.
     # Чистый Python на 100% увидит main.py благодаря sys.path, 
     # а внутри main.py без проблем подтянется config.py.
-    from main import app
+    from app import main
     
     # Передаем Увикорну уже готовый объект приложения, а не строку
     uvicorn.run(app, host="0.0.0.0", port=80)
