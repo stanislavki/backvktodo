@@ -11,6 +11,6 @@ if __name__ == "__main__":
     os.chdir(target_dir)
     
     # Теперь Python гарантированно увидит main.py и все соседние файлы
-    from app import main
+    from main import app
     
     uvicorn.run(app, host="0.0.0.0", port=80)
