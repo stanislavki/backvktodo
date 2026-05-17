@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from ..database import db
+from database import db
 import random
 import string
 
