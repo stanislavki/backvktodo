@@ -1,5 +1,5 @@
 import asyncpg
-from .config import DB_DSN
+from config import DB_DSN
 class Database:
     def __init__(self, dsn):
         self.dsn = dsn
