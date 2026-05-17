@@ -3,14 +3,15 @@ import sys
 import uvicorn
 
 if __name__ == "__main__":
-    # Получаем абсолютный путь к папке backend
+    # Настраиваем правильные пути к папке backend
     backend_dir = os.path.abspath("backend")
-    
-    # СЕКРЕТНЫЙ ИНГРЕДИЕНТ: принудительно добавляем backend в пути поиска модулей Python
     sys.path.insert(0, backend_dir)
-    
-    # Меняем рабочую директорию
     os.chdir(backend_dir)
     
-    # Теперь Python на 100% увидит и main.py, и config.py, и всё остальное
-    uvicorn.run("main:app", host="0.0.0.0", port=80)
+    # СЕКРЕТНЫЙ ХАК: импортируем само приложение как объект прямо здесь.
+    # Чистый Python на 100% увидит main.py благодаря sys.path, 
+    # а внутри main.py без проблем подтянется config.py.
+    from main import app
+    
+    # Передаем Увикорну уже готовый объект приложения, а не строку
+    uvicorn.run(app, host="0.0.0.0", port=80)
