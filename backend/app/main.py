@@ -4,7 +4,7 @@ from config import DB_DSN
 from database import Database, db
 from fastapi.middleware.cors import CORSMiddleware
 from logic import user_router, family_router, task_router, members_router
-from routes.devpassword import router as devpassword_router
+#from routes.devpassword import router as devpassword_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
