@@ -19,9 +19,12 @@ async def code_generator():
 # создание семьи
 @router.post("/create")
 async def create_family(name: str, user_id: int):
-    #ограничение на длину имени
+    # ограничение на длину имени
     if len(name) > 45:
         return {"error": "name too long"}
+
+    # АВТО-РЕГИСТРАЦИЯ: Если юзера нет в БД, создаем его (спасает от ошибки 500)
+    await db.ensure_user_exists(user_id)
 
     invite_code = await code_generator()
 
@@ -44,6 +47,9 @@ async def create_family(name: str, user_id: int):
 async def join_family(invite_code: str, user_id: int):
     family = await db.get_family_by_invite_code(invite_code)
     if family:
+        # АВТО-РЕГИСТРАЦИЯ: При вступлении по коду тоже проверяем юзера
+        await db.ensure_user_exists(user_id)
+
         user = await db.check_membership_by_user_id(user_id)
         if user and user['family_id'] == family['id']:
             return {
@@ -87,4 +93,19 @@ async def get_family_by_code(invite_code: str):
             "invite_code": family['invite_code']
         }
     raise HTTPException(status_code=404, detail="Family not found")
-#поменять роль
+
+
+# поменять роль
+@router.post("/change-role")
+async def change_role(user_id: int, new_role: str):
+    # Проверяем, что роль соответствует вашей таблице БД
+    if new_role not in ['owner', 'parent', 'child']:
+        return {"status": "ERR: invalid role. Must be 'owner', 'parent', or 'child'"}
+    
+    await db.change_user_role(user_id, new_role)
+    
+    return {
+        "status": "role changed",
+        "user_id": user_id,
+        "new_role": new_role
+    }
