@@ -16,23 +16,34 @@ async def code_generator():
             return code
 
 
+# Вспомогательная функция: переводит vk_id во внутренний id (и регистрирует при необходимости)
+async def get_or_create_user(vk_id: int) -> int:
+    user = await db.get_user_by_vk_id(vk_id)
+    if user:
+        return user['id'] # Возвращаем внутренний ID существующего пользователя
+    
+    # Если пользователя нет, создаем его и возвращаем его новый внутренний ID
+    return await db.create_user(vk_id, f"Пользователь {vk_id}")
+
+
 # создание семьи
 @router.post("/create")
-async def create_family(name: str, user_id: int):
+async def create_family(name: str, user_id: int): # user_id здесь = vk_id
     # ограничение на длину имени
     if len(name) > 45:
         return {"error": "name too long"}
 
-    # АВТО-РЕГИСТРАЦИЯ: Если юзера нет в БД, создаем его (спасает от ошибки 500)
-    await db.ensure_user_exists(user_id)
+    # Получаем внутренний ID (и спасаем от ошибки 500)
+    internal_id = await get_or_create_user(user_id)
 
     invite_code = await code_generator()
-
     await db.create_family(name, invite_code)
+    
     family = await db.get_family_by_code(invite_code)
     family_id = family['id']
 
-    await db.add_member(user_id, family_id, 'owner')
+    # Передаем внутренний ID в таблицу family_members
+    await db.add_member(internal_id, family_id, 'owner')
 
     return {
         "status": "family created",
@@ -47,10 +58,10 @@ async def create_family(name: str, user_id: int):
 async def join_family(invite_code: str, user_id: int):
     family = await db.get_family_by_invite_code(invite_code)
     if family:
-        # АВТО-РЕГИСТРАЦИЯ: При вступлении по коду тоже проверяем юзера
-        await db.ensure_user_exists(user_id)
+        # Получаем внутренний ID
+        internal_id = await get_or_create_user(user_id)
 
-        user = await db.check_membership_by_user_id(user_id)
+        user = await db.check_membership_by_user_id(internal_id)
         if user and user['family_id'] == family['id']:
             return {
                 "status": "ERR: user is already in this family",
@@ -60,7 +71,7 @@ async def join_family(invite_code: str, user_id: int):
                 "status": "ERR: user is in another family",
             }
         else:
-            await db.add_member(user_id, family['id'], 'child')
+            await db.add_member(internal_id, family['id'], 'child')
             return {
                 "status": "member added",
                 "family_id": family['id'],
@@ -75,7 +86,8 @@ async def join_family(invite_code: str, user_id: int):
 # выход из семьи
 @router.post("/leave")
 async def leave_family(user_id: int):
-    await db.delete_member(user_id)
+    internal_id = await get_or_create_user(user_id)
+    await db.delete_member(internal_id)
     return {
         "status": "member deleted",
         "user_id": user_id,
@@ -98,14 +110,14 @@ async def get_family_by_code(invite_code: str):
 # поменять роль
 @router.post("/change-role")
 async def change_role(user_id: int, new_role: str):
-    # Проверяем, что роль соответствует вашей таблице БД
     if new_role not in ['owner', 'parent', 'child']:
         return {"status": "ERR: invalid role. Must be 'owner', 'parent', or 'child'"}
     
-    await db.change_user_role(user_id, new_role)
+    internal_id = await get_or_create_user(user_id)
+    await db.change_user_role(internal_id, new_role)
     
     return {
         "status": "role changed",
-        "user_id": user_id,
+        "user_id": user_id, # В ответе можно оставить vk_id для удобства фронтенда
         "new_role": new_role
     }
