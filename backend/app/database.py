@@ -39,6 +39,11 @@ class Database:
         """
         async with self.pool.acquire() as conn:
             await conn.execute(query, user_id, user_id, f"Пользователь {user_id}")
+            
+    async def update_user_name(self, vk_id: int, new_name: str):
+        query = "UPDATE users SET name = $1 WHERE vk_id = $2;"
+        async with self.pool.acquire() as conn:
+            await conn.execute(query, new_name, vk_id)
 
     # ============================
     # Семьи
