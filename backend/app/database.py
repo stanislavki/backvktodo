@@ -63,6 +63,11 @@ class Database:
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, invite_code)
             
+    async def get_family_by_id(self, family_id: int):
+        query = "SELECT * FROM families WHERE id = $1;"
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(query, family_id)
+            
     # 🔥 ИСПРАВЛЕНИЕ: Новый метод для получения семьи по её ID
     async def get_family_by_id(self, family_id: int):
         query = "SELECT * FROM families WHERE id = $1;"
