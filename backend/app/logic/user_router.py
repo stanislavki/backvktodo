@@ -84,3 +84,4 @@ async def get_user_id(vk_id: int):
         return {
             "status": "ERR: invalid_user",
         }
+
